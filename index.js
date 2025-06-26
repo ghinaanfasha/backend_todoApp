@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { v4: generateId } = require('uuid');
+const { v4: generateId } = require('uuid'); // UUID generator
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -9,17 +9,19 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-let taskList = [
+// Data sementara
+let todoList = [
     {
-        id: "1",
-        title: "TB Cloud Computing",
-        description: "Mengerjakan tugas besar cloud computing",
+        id: generateId(),
+        title: "Belajar Cloud Computing",
+        description: "Mengerjakan tugas besar komputasi awan",
         completed: false,
-        dueDate: "2025-06-30",
+        dueDate: "2025-06-25",
         createdAt: "2025-06-16T13:00:00Z"
     }
 ];
 
+// Respon sukses
 const respondSuccess = (res, msg, data = null) => {
     res.status(200).json({
         status: "success",
@@ -28,6 +30,7 @@ const respondSuccess = (res, msg, data = null) => {
     });
 };
 
+// Respon error
 const respondError = (res, code, msg) => {
     res.status(code).json({
         status: "error",
@@ -35,28 +38,28 @@ const respondError = (res, code, msg) => {
     });
 };
 
-// Endpoint
+// Endpoint root
 app.get('/', (req, res) => {
     res.json({
         status: "success",
-        message: "API aktif. Silakan akses /api/tasks untuk data tugas."
+        message: "Backend API aktif. Gunakan endpoint seperti /api/todos"
     });
 });
 
-// Data Task
-app.get('/api/tasks', (req, res) => {
-    respondSuccess(res, "Daftar tugas berhasil diambil", taskList);
+// GET /api/todos
+app.get('/api/todos', (req, res) => {
+    respondSuccess(res, "To-do list retrieved successfully", todoList);
 });
 
-// Tambah task baru
-app.post('/api/tasks', (req, res) => {
+// POST /api/todos
+app.post('/api/todos', (req, res) => {
     const { title, description, dueDate } = req.body;
 
     if (!title || !description || !dueDate) {
-        return respondError(res, 400, "Semua field wajib diisi: title, description, dueDate");
+        return respondError(res, 400, "Fields 'title', 'description', and 'dueDate' are required");
     }
 
-    const newTask = {
+    const newTodo = {
         id: generateId(),
         title,
         description,
@@ -65,57 +68,61 @@ app.post('/api/tasks', (req, res) => {
         createdAt: new Date().toISOString()
     };
 
-    taskList.push(newTask);
-    respondSuccess(res, "Tugas baru berhasil ditambahkan", newTask);
+    todoList.push(newTodo);
+    respondSuccess(res, "To-do created successfully", newTodo);
 });
 
-// Task berdasarkan ID
-app.get('/api/tasks/:id', (req, res) => {
-    const task = taskList.find(item => item.id === req.params.id);
+// GET /api/todos/:id
+app.get('/api/todos/:id', (req, res) => {
+    const id = req.params.id;
+    const todo = todoList.find(item => item.id === id);
 
-    if (!task) {
-        return respondError(res, 404, "Tugas dengan ID tersebut tidak ditemukan");
+    if (!todo) {
+        return respondError(res, 404, "To-do with the given ID not found");
     }
 
-    respondSuccess(res, "Tugas ditemukan", task);
+    respondSuccess(res, "To-do retrieved successfully", todo);
 });
 
-// Update task
-app.put('/api/tasks/:id', (req, res) => {
-    const taskIndex = taskList.findIndex(item => item.id === req.params.id);
+// PUT /api/todos/:id
+app.put('/api/todos/:id', (req, res) => {
+    const id = req.params.id;
+    const index = todoList.findIndex(item => item.id === id);
 
-    if (taskIndex === -1) {
-        return respondError(res, 404, "Tugas tidak ditemukan");
+    if (index === -1) {
+        return respondError(res, 404, "To-do with the given ID not found");
     }
 
     const { title, description, completed, dueDate } = req.body;
 
-    if (title !== undefined) taskList[taskIndex].title = title;
-    if (description !== undefined) taskList[taskIndex].description = description;
-    if (completed !== undefined) taskList[taskIndex].completed = completed;
-    if (dueDate !== undefined) taskList[taskIndex].dueDate = dueDate;
+    if (title !== undefined) todoList[index].title = title;
+    if (description !== undefined) todoList[index].description = description;
+    if (completed !== undefined) todoList[index].completed = completed;
+    if (dueDate !== undefined) todoList[index].dueDate = dueDate;
 
-    respondSuccess(res, "Tugas berhasil diperbarui", taskList[taskIndex]);
+    respondSuccess(res, "To-do updated successfully", todoList[index]);
 });
 
-// Hapus task
-app.delete('/api/tasks/:id', (req, res) => {
-    const lengthBefore = taskList.length;
-    taskList = taskList.filter(item => item.id !== req.params.id);
+// DELETE /api/todos/:id
+app.delete('/api/todos/:id', (req, res) => {
+    const id = req.params.id;
+    const beforeDelete = todoList.length;
+    todoList = todoList.filter(item => item.id !== id);
 
-    if (taskList.length === lengthBefore) {
-        return respondError(res, 404, "Tugas tidak ditemukan untuk dihapus");
+    if (todoList.length === beforeDelete) {
+        return respondError(res, 404, "To-do with the given ID not found");
     }
 
-    respondSuccess(res, "Tugas berhasil dihapus");
+    respondSuccess(res, "To-do deleted successfully");
 });
 
-// Jika tidak ditemukan
+// Fallback endpoint tidak ditemukan
 app.use((req, res) => {
-    respondError(res, 404, "Endpoint tidak ditemukan");
+    respondError(res, 404, "Endpoint not found");
 });
 
+// Jalankan server
 app.listen(PORT, () => {
     console.log(`Server aktif di port ${PORT}`);
-    console.log(`Akses API di http://localhost:${PORT}/api/tasks`);
+    console.log(`Akses API: http://localhost:${PORT}/api/todos`);
 });
